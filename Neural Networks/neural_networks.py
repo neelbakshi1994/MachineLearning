@@ -38,18 +38,28 @@ class NeuralNetwork:
         #hidden layer weights will be of the shape (200, 150)
         
         multiply_weights_product= np.dot(input_to_layer, layer_weights)
-        output = np.zeros_like(multiply_weights_product)
+        output_without_activation = np.zeros_like(multiply_weights_product)
+        output_after_activation = np.zeros_like(multiply_weights_product)
         #multiply_weights_product.shape = (500,150)
-        #output.shape = (500,150)
+        #output.shape = (500,150), for both with and without activation
         #layer_bias.shape = (150, )
         
         #we take out each input from the batch and add the biases to it
+        #output_without_activation = z from our notes
+        #output_with_activation = a from our notes
         for index, product in enumerate(multiply_weights_product):
-                output[index] = self.activation(product+layer_bias)
+                output_without_activation[index] = product+layer_bias
+                output_after_activation[index] = self.activation(output_without_activation[index])
         
-        return output
+        #we are returning both because we will need 
+        #both these values during back propagation
+        return output_without_activation, output_after_activation
     
     def feed_forward(self, input_batch):
+        curr_input = input_batch
+        for weights, bias in (self.weights, self.biases):
+            curr_output_without_activation, curr_output_with_activation = \
+            self.layer_output(curr_input, weights, bias)
         
     
     def fit(self, X, Y, learning_rate, epochs):
