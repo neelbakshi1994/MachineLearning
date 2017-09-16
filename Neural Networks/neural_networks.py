@@ -14,7 +14,7 @@ class NeuralNetwork:
         #it means that there are four input nodes, 5 nodes in hidden layer 1
         #and 3 output nodes
         self.structure = structure
-        self.weights = [np.random.rand(num_of_nodes_prev, ) \
+        self.weights = [np.random.rand(num_of_nodes_prev, num_of_nodes_curr) \
                         for num_of_nodes_curr, num_of_nodes_prev in \
                         zip(structure[1:], structure[:-1])]
         self.biases = [np.random.rand(num_of_nodes_curr, 1) \
@@ -56,13 +56,33 @@ class NeuralNetwork:
         return output_without_activation, output_after_activation
     
     def feed_forward(self, input_batch):
+        self.z = []
+        self.a= []
         curr_input = input_batch
         for weights, bias in (self.weights, self.biases):
             curr_output_without_activation, curr_output_with_activation = \
             self.layer_output(curr_input, weights, bias)
+            self.z.append(curr_output_without_activation)
+            self.a.append(curr_output_with_activation)
+            
+        return curr_output_with_activation
         
-    
+    def back_propagate(self, final_output):
+        final_layer_delta = \
+        self.cost_function_derivate(final_output, self.Y)*self.activation_derivative(self.z[-1])
+        delta_b = [np.zeros(bias.shape) for bias in self.biases]
+        delta_w = [np.zeros(weights.shape) for weights in self.weights]
+        
+        delta_b[-1] = final_layer_delta
+        delta_w[-1] = np.dot(np.array([self.a[-2]]).T,final_layer_delta)
+        for layer in xrange(2, len(self.structure)):
+            delta_layer = np.dot(delta_w[-layer+1], self.weights[-layer+1].T)*self.cost_function_derivate(self.z[-layer])
+            delta_b[-layer] = delta_layer
+            delta_w[-layer] = np.dot(np.array([self.a[-layer-1]]).T,final_layer_delta)
+            
     def fit(self, X, Y, learning_rate, epochs):
+        self.X = X
+        self.Y = Y
         self.learning_rate = learning_rate
                 
             
