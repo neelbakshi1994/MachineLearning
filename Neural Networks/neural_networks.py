@@ -56,20 +56,22 @@ class NeuralNetwork:
         return output_without_activation, output_after_activation
     
     def feed_forward(self, input_batch):
+        print("Perfoming feed forward")
         self.z = []
-        self.a= []
+        self.a= [input_batch]
         curr_input = input_batch
-        for weights, bias in (self.weights, self.biases):
+        for weights, bias in zip(self.weights, self.biases):
             curr_output_without_activation, curr_output_with_activation = \
             self.layer_output(curr_input, weights, bias)
             self.z.append(curr_output_without_activation)
             self.a.append(curr_output_with_activation)
-            
+        
         return curr_output_with_activation
         
-    def back_propagate(self, final_output):
+    def back_propagate(self, final_output, actual_output):
+        print("Performing back propagation")
         final_layer_delta = \
-        self.cost_function_derivate(final_output, self.Y)*self.activation_derivative(self.z[-1])
+        self.cost_function_derivate(final_output, actual_output)*self.activation_derivative(self.z[-1])
         delta_b = [np.zeros(bias.shape) for bias in self.biases]
         delta_w = [np.zeros(weights.shape) for weights in self.weights]
         
@@ -80,10 +82,31 @@ class NeuralNetwork:
             delta_b[-layer] = delta_layer
             delta_w[-layer] = np.dot(np.array([self.a[-layer-1]]).T,final_layer_delta)
             
-    def fit(self, X, Y, learning_rate, epochs):
+        return delta_b, delta_w
+    
+    def gradient_descent(self, current_values, deltas):
+        return [(current_value - (self.learning_rate * delta)) for current_value, delta in zip(current_values, deltas)]
+    
+    def update_weights_and_biases(self, delta_biases, delta_weights):
+        self.biases = self.gradient_descent(self.biases, delta_biases)
+        self.weights = self.gradient_descent(self.weights, delta_weights)
+            
+    def fit(self, X, Y, learning_rate, epochs, batch_size):
         self.X = X
         self.Y = Y
         self.learning_rate = learning_rate
+        
+        for batch_start_index in xrange(0, len(X), batch_size):
+            input_batch = self.X[batch_start_index:(batch_start_index+batch_size)]
+            output_batch = self.Y[batch_start_index:(batch_start_index+batch_size)]
+            for epoch in xrange(0, epochs):
+                print("Starting epoch {0}: ").format(epoch)
+                curr_epoch_predicted_output = self.feed_forward(input_batch)
+                epoch_delta_b, epoch_delta_w = self.back_propagate(curr_epoch_predicted_output, output_batch)
+                self.update_weights_and_biases(delta_biases=epoch_delta_b, delta_weights=epoch_delta_w)
+                print("Finished epoch {0}: ").format(epoch)
+        
+            
                 
             
     
